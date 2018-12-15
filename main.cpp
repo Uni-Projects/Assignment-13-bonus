@@ -1015,7 +1015,7 @@ void open_file (fstream& file, string file_name)
 void read_file(State& start,vector <State>& attempt,fstream& file)
 {
     //PRE:
-    assert(attempt.size() > 0 && file.is_open());
+    assert(file.is_open());
     //POST:
     // read the file, prints the loaded challenge and set the variables needed for the
     // challenge solving.
