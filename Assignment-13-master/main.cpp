@@ -1,56 +1,56 @@
 /*
-Paolo Scattolin s1023775
-Johan Urban     s1024726
-Assignment 13 bonus
+    Paolo Scattolin s1023775
+    Johan Urban     s1024726
+    Assignment 13: Search Problems (also recursively)
+    We could not make the challenge.25.txt work, even though more complicated levels worked fine.
+    Please let us know if you find the bug! Thank you!
 */
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <cassert>
 #include <vector>
-#include <windows.h>
-#include "cursor.h"
 
 using namespace std;
 
-/************************************************************************
-*  This section contains data structures, constants and global variables.
-************************************************************************/
-
 enum Cell {empty=0, wall, destination, worker, box,worker_on_dest,box_on_dest};
-enum Direction {north=0, south, east, west};
+enum Direction {north=0, south, east,west};
 
 const int HEIGHT = 15;
 const int WIDTH = 15;
+
+int a_height;
+int a_width;
+
+Cell world [HEIGHT][WIDTH];
 
 struct Pos
 {
     int row;
     int col;
 };
+
 struct State
 {
     Cell layout [HEIGHT][WIDTH];
     Pos player;
     vector <Pos> boxes;
 };
+
 struct Node
 {
     State config ;
     int parent ;
 };
 
-int a_height;
-int a_width;
-
-Cell world [HEIGHT][WIDTH];
-vector <State> path;
-
-void solve2( vector<State>& attempt, vector<State>& shortest, int max_depth);
-
-/************************************************************************
-*  Some useful operators.
-************************************************************************/
+bool open_file (fstream& file, string file_name)
+{
+    // PRE:
+    assert(file_name.length() > 4);
+    // POST: returns true if the file with file_name is opened correctly.
+   file.open(file_name.c_str());
+   return file.is_open();
+}
 
 fstream& operator>> (fstream& file, Cell world[HEIGHT][WIDTH])
 {
@@ -125,10 +125,6 @@ bool operator== (State& s1, State& s2)
     return (s1.player == s2.player && s1.boxes == s2.boxes);
 }
 
-/************************************************************************
-*  These 2 function should be in I/O but the program need them here :/
-************************************************************************/
-
 void show_world (Cell world[HEIGHT][WIDTH])
 {
     // PRE:
@@ -161,7 +157,7 @@ State set_up (Cell w [HEIGHT][WIDTH])
 {
     // PRE:
     assert(true);
-    // POST: Returns a valid state based on the world.
+    // POST: Returns a valid state of the world.
     State config;
 
     for (int i = 0 ; i < a_height ; i++)
@@ -188,13 +184,6 @@ State set_up (Cell w [HEIGHT][WIDTH])
     return config ;
 }
 
-/************************************************************************
-*  This are the functions needed for world navigation of the worker + box
-*  movements. Also they update the map and check for its completion.
-*  finally since a box in a corner is a very easy deadlock to find we
-*  implemented a function that recognise that situation.
-************************************************************************/
-
 bool box_in_corner (State start)
 {
     // PRE:
@@ -220,7 +209,7 @@ bool box_in_corner (State start)
 bool facing_box (State s, Direction d)
 {
     // PRE:
-    assert(static_cast<int> (d) >= 0 && static_cast<int> (d) < 4);
+    assert(static_cast<int> (d) >=0 && static_cast<int> (d) < 4);
     // POST: returns true if player faces a box for the given direction d. False otherwise.
     switch (d)
         {
@@ -243,7 +232,7 @@ bool facing_box (State s, Direction d)
 bool is_movable (State s, Direction d)
 {
     // PRE:
-    assert(static_cast<int> (d) >= 0 && static_cast<int> (d) < 4);
+    assert(static_cast<int> (d) >=0 && static_cast<int> (d) < 4);
     // POST: returns true if, for the direction the worker intends to push the box,
     // there is a free cell / destination cell for the box to be moved to.
     switch (d)
@@ -261,6 +250,22 @@ bool is_movable (State s, Direction d)
             return (s.layout[s.player.row][s.player.col - 2] == empty || s.layout[s.player.row][s.player.col - 2] == destination);
             break;
     }
+}
+
+bool is_solved (State s)
+{
+    // PRE:
+    assert(true);
+    // POST: returns true if the challenged is solved, i.e. in a solution state.
+    for (int i = 0 ; i < a_height ; i++)
+    {
+        for(int j = 0 ; j < a_width ; j++)
+        {
+           if (s.layout[i][j] == box)
+            return false ;
+        }
+    }
+    return true;
 }
 
 bool can_go_north(State s)
@@ -294,26 +299,6 @@ bool can_go_west(State s)
     //POST: returns true if the player may go west, i.e. there is no object in the way.
     return (s.layout[s.player.row][s.player.col - 1] == empty || s.layout[s.player.row][s.player.col - 1] == destination);
 }
-
-bool is_solved (State s)
-{
-    // PRE:
-    assert(true);
-    // POST: returns true if the challenged is solved, i.e. in a solution state.
-    for (int i = 0 ; i < a_height ; i++)
-    {
-        for(int j = 0 ; j < a_width ; j++)
-        {
-           if (s.layout[i][j] == box)
-            return false ;
-        }
-    }
-    return true;
-}
-
-/************************************************************************
-*  This are the functions needed if the user select breadth first search.
-************************************************************************/
 
 bool new_config (vector<Node>& n, State s)
 {
@@ -504,10 +489,10 @@ void move_box (vector<Node>& n, int i, Direction d)
                         if(newState.layout[newState.player.row - 2][newState.player.col] == destination)
                         {
                             newState.layout[newState.player.row - 2][newState.player.col] = box_on_dest;
-                            newState.layout[newState.player.row - 1][newState.player.col] = destination;
+                            newState.layout[newState.player.row][newState.player.col] = destination;
                         }
                 }
-                break ;
+                break;
 
             case south:
                 if(newState.layout[newState.player.row + 1][newState.player.col] == box)
@@ -605,12 +590,15 @@ void show_path (vector <Node>& n ,int i)
 {
     // PRE:
     assert(n.size() > 0);
-    // POST: recursively fills the path vector with the nodes that lead to a solution.
+    // POST: recursively the parents of the selected state are called within the vector and printed to the console
+    // thanks to function show_world.
     if (i >= 0)
     {
-        path.push_back(n[i].config);
+        show_world(n[i].config.layout);
+        cout << endl ;
         show_path(n, n[i].parent);
     }
+
 }
 
 void solve (State start)
@@ -623,44 +611,40 @@ void solve (State start)
 
     while(i < n.size() && !is_solved(n[i].config))
     {
+        int j = 0;
         State s = n[i].config;
 
         if (facing_box(s,north) && is_movable(s,north))
+        {
             move_box(n,i,north);
-
+        }
         if (can_go_north(s))
+        {
             move_player(n,i,north,n[i].config);
-
+        }
         if (facing_box(s,south) && is_movable(s,south))
             move_box(n,i,south);
-
         if (can_go_south(s))
             move_player(n,i,south,n[i].config);
-
         if (facing_box(s,east) && is_movable(s,east))
             move_box(n,i,east);
-
         if (can_go_east(s))
             move_player(n,i,east,n[i].config);
-
         if (facing_box(s,west) && is_movable(s,west))
-            move_box(n,i,west);
-
+           move_box(n,i,west);
         if (can_go_west(s))
             move_player(n,i,west,n[i].config);
 
+        show_world(n[i].config.layout);
+        cout << endl;
+
         i++ ;
+
      }
 
       if(i < n.size())
         show_path(n, i) ;
 }
-
-/************************************************************************
-*  This are the functions needed if the user select depth first search.
-*  p.s the giant switches both in move_player2 and move_box2 are the same
-*      as the ones in move_player and move_box.
-************************************************************************/
 
 bool new_config2 (vector<State>& attempt, State s)
 {
@@ -674,6 +658,8 @@ bool new_config2 (vector<State>& attempt, State s)
     }
     return true;
 }
+
+void solve2( vector<State>& attempt, vector<State>& shortest, int max_depth);
 
 void move_player2 (vector<State>& attempt, vector<State>& shortest, Direction d, State s, int max_depth)
 {
@@ -851,7 +837,7 @@ void move_box2 (vector<State>& attempt, vector<State>& shortest, Direction d, in
                         if(newState.layout[newState.player.row - 2][newState.player.col] == destination)
                         {
                             newState.layout[newState.player.row - 2][newState.player.col] = box_on_dest;
-                            newState.layout[newState.player.row - 1][newState.player.col] = destination;
+                            newState.layout[newState.player.row][newState.player.col] = destination;
                         }
                 }
                 break;
@@ -951,198 +937,87 @@ void move_box2 (vector<State>& attempt, vector<State>& shortest, Direction d, in
 void solve2( vector<State>& attempt, vector<State>& shortest, int max_depth)
 {
     // PRE:
-    assert (attempt.size() > 0 && max_depth > 0);
-    // POST: Computes the optimal solution, i.e. using least number of moves, to the level in question
-    // using depth-first search recursively.
-
+    assert(attempt.size() > 0 && max_depth > 0);
+    // POST: Computes the optimal solution, i.e. using least number of moves, to the level in question using depth-first search recursively.
     const int CURRENT = attempt.size() ;
     const int BEST = shortest.size() ;
     State s = attempt[CURRENT-1] ;
 
-    if (BEST > 0 && CURRENT >= BEST)
+    if(BEST > 0 && CURRENT >= BEST)
     {
          return;
     }
-    else if (CURRENT > max_depth + 1)
+    else if(CURRENT> max_depth+1)
     {
         return;
     }
-    else if (is_solved(s))
+    else if(is_solved(s))
     {
         shortest = attempt;
         return;
     }
     if (facing_box(s,north) && is_movable(s,north))
+        {
             move_box2(attempt,shortest,north,max_depth);
-
+        }
         if (can_go_north(s))
             move_player2(attempt,shortest,north,s,max_depth);
 
         if (facing_box(s,south) && is_movable(s,south))
+        {
             move_box2(attempt,shortest,south,max_depth);
-
+        }
         if (can_go_south(s))
             move_player2(attempt,shortest,south,s,max_depth);
 
         if (facing_box(s,east) && is_movable(s,east))
+        {
             move_box2(attempt,shortest,east,max_depth);
-
+        }
         if (can_go_east(s))
             move_player2(attempt,shortest,east,s,max_depth);
 
         if (facing_box(s,west) && is_movable(s,west))
+        {
             move_box2(attempt,shortest,west,max_depth);
-
+        }
         if (can_go_west(s))
             move_player2(attempt,shortest,west,s,max_depth);
-}
-
-/************************************************************************
-*  Main + I/O functions
-************************************************************************/
-
-void open_file (fstream& file, string file_name)
-{
-    // PRE:
-    assert(file_name.length() > 4);
-    // POST: takes care of the file opening giving feedback.
-   file.open(file_name.c_str());
-   if (file.is_open())
-   {
-       cout << "File loaded correctly" << endl ;
-   }
-   else cout << "File not loaded!" << endl ;
-}
-
-void read_file(State& start,vector <State>& attempt,fstream& file)
-{
-    //PRE:
-    assert(file.is_open());
-    //POST:
-    // read the file, prints the loaded challenge and set the variables needed for the
-    // challenge solving.
-
-    file >> world;
-    file.close();
-    cout << endl;
-    cout << "CHALLENGE:" << endl;
-    show_world(world);
-    start = set_up(world);
-    attempt.push_back(start);
-}
-void loading()
-{
-    cout << "Loading " ;
-
-    for(int j = 0 ; j < 5 ; j++)
-    {
-       set_cursor_position(j+7, 0) ;
-       cout << "." ;
-       Sleep(500);
-    }
-
-    set_cursor_position(0, 2) ;
-    cout << "Loading complete! " ;
-    Sleep(1000);
-    cls();
-}
-void selection_and_print (State& start, vector<State>& attempt, vector<State>& shortest)
-{
-    //PRE:
-    assert(attempt.size() > 0);
-    //POST:
-    //it takes care of the user choice for solving the challenge and prints the solution with a nice format.
-
-    int max_depth;
-    int c = 1;
-    char choice;
-
-    cout << endl;
-    cout << "How do you want to solve this challenge?" << endl;
-    cout << "'a' --> breadth first search" << endl;
-    cout << "'b' --> depth first search" << endl;
-
-    cin >> choice;
-    cout << endl ;
-
-    switch(choice)
-    {
-       case 'a':
-           cls();
-           cout << "SOLVING WITH BREADTH FIRST SEARCH..." << endl;
-           Sleep(1000);
-           solve(start);
-           cls();
-           loading();
-           for(int i = path.size() - 2 ; i >= 0 ; i--)
-           {
-             cout << "MOVE " << c << endl;
-             show_world(path[i].layout);
-             if (i == 0)
-              {
-                  cout << endl ;
-                  cout << "DONE!" << endl;
-              }
-              else
-              {
-                  Sleep(750);
-                  cls();
-              }
-             c++;
-           }
-           break;
-
-       case 'b':
-           cout << "What should the max depth be?" << endl;
-           cin >> max_depth;
-           cls();
-           cout << "SOLVING WITH DEPTH FIRST SEARCH..." << endl;
-           Sleep(1000);
-           solve2(attempt,shortest,max_depth); // function names ending with 2 are part 3.
-           cls();
-           loading();
-           for (int i = 1 ; i < shortest.size(); i++)
-           {
-              cout << "MOVE " << i << endl;
-              show_world(shortest[i].layout);
-              if (i == shortest.size()-1)
-              {
-                  cout << endl ;
-                  cout << "DONE!" << endl;
-              }
-              else
-              {
-                  Sleep(750);
-                  cls();
-              }
-           }
-           break;
-
-       default:
-           cout << "Please, select a valid option!"<< endl ;
-           break;
-    }
 }
 
 int main()
 {
     // PRE:
     assert(true);
-    //POST: open the file, copies the configuration in the file and ask the user how to solve the challenge.
-
+    // POST: ...
     fstream file;
     string file_name;
     vector<State> attempt, shortest;
+    int max_depth = 36;
 
-    State start;
-
-    cout << "Insert challenge name: ";
+    cout << "insert file name: ";
 
     getline(cin,file_name);
 
-    open_file(file, file_name);
-    read_file(start, attempt, file);
-    selection_and_print(start, attempt, shortest);
+    if (open_file(file,file_name))
+        cout << "File loaded correctly" << endl ;
+    else cout << "File not loaded!" << endl ;
 
+    file >> world ;
+
+    file.close();
+
+    State start = set_up(world);
+
+    attempt.push_back(start);
+
+    solve(start);
+    /*solve2(attempt,shortest,max_depth); // function names ending with 2 are part 3.
+
+    for (int i = 0 ; i < shortest.size(); i++)
+    {
+        show_world(shortest[i].layout);
+    }
+*/
     return 0;
 }

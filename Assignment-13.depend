@@ -1,0 +1,18 @@
+# depslib dependency file v1.0
+1544900011 source:c:\users\scatt_000\desktop\imperative programming\assignment-13\main.cpp
+	<iostream>
+	<fstream>
+	<string>
+	<cassert>
+	<vector>
+	<windows.h>
+	"cursor.h"
+
+1539174403 c:\users\scatt_000\desktop\imperative programming\assignment-13\cursor.h
+	<iostream>
+	<cassert>
+	<windows.h>
+
+1539174403 source:c:\users\scatt_000\desktop\imperative programming\assignment-13\cursor.cpp
+	"cursor.h"
+
