@@ -40,6 +40,7 @@ struct Node
 
 int a_height;
 int a_width;
+bool run = true;
 
 Cell world [HEIGHT][WIDTH];
 vector <State> path;
@@ -1044,6 +1045,7 @@ void selection_and_print (State& start, vector<State>& attempt, vector<State>& s
     cout << "How do you want to solve this challenge?" << endl;
     cout << "'a' --> breadth first search" << endl;
     cout << "'b' --> depth first search" << endl;
+    cout << "'e' --> terminate the program" << endl;
 
     cin >> choice;
     cout << endl ;
@@ -1074,6 +1076,11 @@ void selection_and_print (State& start, vector<State>& attempt, vector<State>& s
               show_world(shortest[i].layout);
            }
            break;
+        case 'e':
+           run = false;
+           cout << "Program terminated" << endl;
+           break;
+
        default:
            cout << "Please, select a valid option!"<< endl ;
            break;
@@ -1085,20 +1092,35 @@ int main()
     // PRE:
     assert(true);
     //POST: open the file, copies the configuration in the file and ask the user how to solve the challenge.
+    while (run)
+    {
+        fstream file;
+        string file_name;
+        vector<State> attempt, shortest;
+        char c;
 
-    fstream file;
-    string file_name;
-    vector<State> attempt, shortest;
+        State start;
 
-    State start;
+        cout << "Insert challenge name: ";
 
-    cout << "Insert challenge name: ";
+        getline(cin,file_name);
 
-    getline(cin,file_name);
+        open_file(file, file_name);
+        read_file(start, attempt, file);
+        selection_and_print(start, attempt, shortest);
 
-    open_file(file, file_name);
-    read_file(start, attempt, file);
-    selection_and_print(start, attempt, shortest);
-
+        if (run)
+        {
+           cout << "Do you want to insert another challenge?(y/n)" << endl;
+           cin >> c;
+           cin.ignore();
+           cout << endl ;
+           if (c == 'n')
+           {
+              run = false;
+              cout << "Program terminated" << endl ;
+           }
+        }
+    }
     return 0;
 }
